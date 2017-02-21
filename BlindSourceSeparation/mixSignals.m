@@ -1,9 +1,9 @@
-function [ X ] = mixSignals( sounds, numOfSignals, NumOfSamples, index)
+function [ mixedSignals, A ] = mixSignals( sounds, numOfSignals, NumOfSamples, index)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 % TODO: randomly select the samples
-W = rand(numOfSignals, NumOfSamples);
-normr(W);
-X = W * sounds(index, :);
+A = rand(numOfSignals, NumOfSamples);
+normr(A);
+mixedSignals = A * sounds(index, :);
 end
 
