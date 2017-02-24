@@ -2,7 +2,7 @@ function [ mixedSignals, A ] = mixSignals( sounds, numOfSignals, NumOfSamples, i
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 % TODO: randomly select the samples
-A = rand(numOfSignals, NumOfSamples);
+A = 0.1*rand(numOfSignals, NumOfSamples);
 normr(A);
 mixedSignals = A * sounds(index, :);
 end
