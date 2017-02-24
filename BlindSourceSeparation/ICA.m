@@ -1,10 +1,7 @@
-function [ Y, W ] = ICA( learningRate, numIters, X, NumOfSignals)
+function [ Y, W ] = ICA( learningRate, numIters, X, W, NumOfSignals)
 %generates independent components asumed that they are generated
 % from linear combination of non-gaussian variables
-NumOfSamples = size(X,1);
 
-% generate random matrix with values in range [0-0.1].
-W = 0.1 * rand(NumOfSignals,NumOfSamples);
 Y = W * X;
 I = eye(size(Y,1));
 prevNormW = norm(W);
