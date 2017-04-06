@@ -15,20 +15,18 @@ class Gridworld():
     self.noise = 0.2
     self.state = (0,0)
     self.startState = (0,0)
-    #self.data[width-1][height-1]=10
 
   def makeGrid(self):
-    for h in range(self.height):
-        self.data[self.width - 1][h] = 10
+      self.data[self.width - 1][0] = 10
 
   def getPossibleActions(self, state):
     if state == self.terminalState:
       return ()
     x,y = state
 
-    if x==(self.width-1):
+    if x==(self.width-1) and y ==(0):
       return ('exit',)
-    return ('north','east','south','west')
+    return ('north','east','south')
     
   def getStates(self):
     """
@@ -68,14 +66,14 @@ class Gridworld():
     
     x, y = state
     
-    if x==(self.width-1):
+    if x==(self.width-1) and y ==(0):
       termState = self.terminalState
       return [(termState, 1.0)]
       
     successors = []                
                 
     northState = (self.__isAllowed(y+1,x) and (x,y+1)) or state
-    westState = (self.__isAllowed(y,x-1) and (x-1,y)) or state
+    #westState = (self.__isAllowed(y,x-1) and (x-1,y)) or state
     southState = (self.__isAllowed(y-1,x) and (x,y-1)) or state
     eastState = (self.__isAllowed(y,x+1) and (x+1,y)) or state
                         
@@ -86,14 +84,14 @@ class Gridworld():
         successors.append((southState,1-self.noise))
                                 
       massLeft = self.noise
-      successors.append((westState,massLeft/2.0))
-      successors.append((eastState,massLeft/2.0))
+      #successors.append((westState,massLeft/2.0))
+      successors.append((eastState,massLeft/1.0))
                                 
     if action == 'west' or action == 'east':
-      if action == 'west':
-        successors.append((westState,1-self.noise))
-      else:
+      if action == 'east':
         successors.append((eastState,1-self.noise))
+      #else:
+      #  successors.append((eastState,1-self.noise))
                 
       massLeft = self.noise
       successors.append((northState,massLeft/2.0))
