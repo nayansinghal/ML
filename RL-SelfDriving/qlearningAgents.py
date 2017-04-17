@@ -3,21 +3,31 @@ from gridworld import *;
           
 class QLearningAgent():
   def __init__(self, grid):
-    self.QValues = util.Counter()
+    self.QValuesWalk = util.Counter()
     self.grid = grid
     self.epsilon = 0.05
     self.alpha = 1
     self.gamma = 0.8
+
+  def updateEpsilon(self):
+    self.epsilon = self.epsilon * 0.99
+
+  def setEpsilon(self, value):
+    self.epsilon = 0.0
   
   def getQValue(self, state, action):
-    return self.QValues[(state,action)]
+    if self.grid.qtype == "walk":
+      return self.QValuesWalk[(state,action)]
+    elif self.grid.qtype == "obstacle":
+      env = self.grid.getEnvironment(state)
+      return self.QValuesWalk[(env,action)]
   
   def getValue(self, state):
     actions = self.grid.getPossibleActions(state)
     if len(actions) < 1:
       return 0.0
 
-    return max([self.QValues[(state, action)] for action in actions])
+    return max([self.QValuesWalk[(state, action)] for action in actions])
     
   def getPolicy(self, state):
     maxqval=float("-inf")
@@ -25,8 +35,9 @@ class QLearningAgent():
     actions = self.grid.getPossibleActions(state)
     if len(actions)==0:
       return None
+    env = self.grid.getEnvironment(state)
     for action in actions:
-      qValue = self.QValues[(state,action)]
+      qValue = self.QValuesWalk[(env,action)]
       if qValue > maxqval:
         maxqval=qValue
         bestAction=[action]
@@ -50,12 +61,12 @@ class QLearningAgent():
 
     if state=="TERMINAL_STATE":
       return
-    env = state
-    nextenv = nextState
-    oldQsa = self.QValues[(env, action)]
+    env = self.grid.getEnvironment(state)
+    nextenv = self.grid.getEnvironment(nextState)
+    oldQsa = self.QValuesWalk[(env, action)]
     nextActions = self.grid.getPossibleActions(nextState)
     if len(nextActions)==0:
-      maxFutureValue=self.QValues[(nextenv, action)]
+      maxFutureValue=self.QValuesWalk[(nextenv, action)]
     else:
-      maxFutureValue=max([self.QValues[(nextenv, nextAction)] for nextAction in nextActions])
-    self.QValues[(env, action)] = oldQsa + self.alpha * ( reward + self.gamma * (maxFutureValue) - oldQsa )
+      maxFutureValue=max([self.QValuesWalk[(nextenv, nextAction)] for nextAction in nextActions])
+    self.QValuesWalk[(env, action)] = oldQsa + self.alpha * ( reward + self.gamma * (maxFutureValue) - oldQsa )
