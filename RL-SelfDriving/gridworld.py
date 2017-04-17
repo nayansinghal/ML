@@ -7,17 +7,61 @@ class Gridworld():
   """
     Gridworld
   """
-  def __init__(self, width, height):
+  def __init__(self, width, height, qtype):
     self.width = width
     self.height = height
-    self.data = [[0 for y in range(height)] for x in range(width)]
+    # 10 X 4 , where (0,0) x++ will takes you to (1,0)
+    self.data = [['' for y in range(height)] for x in range(width)]
     self.terminalState = 'TERMINAL_STATE'
     self.noise = 0.2
     self.state = (0,0)
     self.startState = (0,0)
+    self.qtype = qtype
+
+  def getObstacleEnv(self, state):
+      north = ' '
+      south = ' '
+      east = ' '
+      west = ' '
+
+      x,y = state
+      if (y == self.height - 1):
+        north = 'w'
+      else:
+        north = self.data[x][y + 1]
+
+      if (y == 0):
+        south = 'w'
+      else:
+        south = self.data[x][y-1]
+
+      if (x == self.width - 1):
+        east = 'w'
+      else:
+        east = self.data[x+1][y]
+
+      if (x == 0):
+        west = 'w'
+      else:
+        west = self.data[x-1][y]
+
+      return (north, east, south, west)
+
+  def getEnvironment(self, state):
+    if self.qtype == "walk":
+      return state
+    if state == self.terminalState:
+      return None
+    if self.qtype == "obstacle":
+      return self.getObstacleEnv(state)
 
   def makeGrid(self):
-      self.data[self.width - 1][0] = 10
+      self.data[self.width - 1][0] = '10'
+
+      if self.qtype == "obstacle":
+        self.data[2][0] = 'O'
+        self.data[4][1] = 'O'
+        self.data[6][0] = 'O'
 
   def getPossibleActions(self, state):
     if state == self.terminalState:
@@ -40,15 +84,22 @@ class Gridworld():
           states.append(state)
     return states
         
-  def getReward(self, state, action):
+  def getReward(self, state, action, nextState):
     
     if state == self.terminalState:
         return 0.0
+    nextState
+
+    if nextState != self.terminalState:
+      x,y = nextState
+      if self.data[x][y] == 'O':
+        return -5.0
 
     if action=='east':
       return 0.5
     else:
       return -0.5
+
 
   def getStartState(self):
       return self.startState
@@ -147,7 +198,7 @@ class Gridworld():
         tookAction = self.inferAction(state, nextState)
         if tookAction!=None:
           action=tookAction
-        reward = self.getReward(state, action)
+        reward = self.getReward(state, action, nextState)
         self.state = nextState
         return (nextState, reward, action)
     raise 'Total transition probability less than one; sample failure.'    
@@ -161,11 +212,14 @@ class Gridworld():
     totalDiscount = 1.0
     self.reset()
     display.start()
+    iter = 0
 
     print ("BEGINNING EPISODE: "+str(episode)+"\n")
     while True:
 
       # DISPLAY CURRENT STATE
+      print ("ITERATION: " + str(iter) + "\n")
+
       state = self.getCurrentState()
       display.displayQValues(agent, state)
 
@@ -189,4 +243,4 @@ class Gridworld():
               "\nGot reward: "+str(reward)+"\n")
       # UPDATE LEARNER
       agent.update(state, action2, nextState, reward)
- 
+      agent.updateEpsilon()
