@@ -14,13 +14,19 @@ class QLearningAgent():
 
   def setEpsilon(self, value):
     self.epsilon = 0.0
-  
+
+  def getQvalueUsingDynObstacle(self, env, action):
+    return self.QValuesWalk[(env, action)]
+
   def getQValue(self, state, action):
     if self.grid.qtype == "walk":
       return self.QValuesWalk[(state,action)]
     elif self.grid.qtype == "obstacle":
       env = self.grid.getEnvironment(state)
       return self.QValuesWalk[(env,action)]
+    elif self.grid.qtype == "dynamic_obstacle":
+      env = self.grid.getEnvironment(state)
+      return self.QValuesWalk[(env, action)]
   
   def getValue(self, state):
     actions = self.grid.getPossibleActions(state)
