@@ -5,8 +5,8 @@ class GraphicsGridworldDisplay:
   
   def __init__(self, gridworld, size=120, speed=1.0):
     self.gridworld = gridworld
-    self.size = size
-    self.speed = speed
+    self.size = 120
+    self.speed = 0.6
     
   def start(self):
     setup(self.gridworld, size=self.size)
@@ -28,7 +28,8 @@ EDGE_COLOR = formatColor(1,1,1)
 OBSTACLE_COLOR = formatColor(0.5,0.5,0.5)
 TEXT_COLOR = formatColor(1,1,1)
 MUTED_TEXT_COLOR = formatColor(0.7,0.7,0.7)
-LOCATION_COLOR = formatColor(0,0,1)
+LOCATION_COLOR = formatColor(0,1,1)
+DYNAMIC_CAR_COLOR = formatColor(1,0.4, 0.7)
 
 WINDOW_SIZE = -1
 GRID_SIZE = -1
@@ -45,7 +46,7 @@ def setup(gridworld, title = "Gridworld Display", size = 120):
   screen_width = (grid.width - 1) * GRID_SIZE + MARGIN * 2
   screen_height = (grid.height - 0.5) * GRID_SIZE + MARGIN * 2
 
-  begin_graphics(screen_width,    
+  begin_graphics(screen_width,
                  screen_height,
                  BACKGROUND_COLOR, title=title)
 
@@ -61,7 +62,7 @@ def drawQValues(gridworld, qValues, currentState = None, message = 'State-Action
     for y in range(grid.height):
       state = (x, y)
       gridType = grid.data[x][y]
-      isExit = (str(gridType) != gridType)
+      isExit = (str(gridType) == 'e')
       isCurrent = (currentState == state)
       actions = gridworld.getPossibleActions(state)
       if actions == None or len(actions) == 0:
@@ -75,13 +76,15 @@ def drawQValues(gridworld, qValues, currentState = None, message = 'State-Action
         v = qValues[(state, action)]
         q[action] += v
         valStrings[action] = '%.2f' % v
-      if gridType == '#':
-        drawSquare(x, y, 0, 0, 0, None, None, True, False, isCurrent)
+      if gridType == 'O':
+        drawSquare(x, y, 0, 0, 0, None, None, True, False, isCurrent, False)
+      elif gridType == 'D':
+        drawSquare(x, y, 0, 0, 0, None, None, True, False, isCurrent, True)
       elif isExit:
         action = 'exit'
         value = q[action]
         valString = '%.2f' % value
-        drawSquare(x, y, value, minValue, maxValue, valString, action, False, isExit, isCurrent)
+        drawSquare(x, y, value, minValue, maxValue, "end", action, False, isExit, isCurrent, False)
       else:
         drawSquareQ(x, y, q, minValue, maxValue, valStrings, actions, isCurrent)
   pos = to_screen(((grid.width - 1.0) / 2.0, - 0.8))
@@ -90,48 +93,8 @@ def drawQValues(gridworld, qValues, currentState = None, message = 'State-Action
 
 def blank():
   clear_screen()
-
-def drawNullSquare(grid,x, y, isObstacle, isTerminal, isCurrent):      
-
-  square_color = getColor(0, -1, 1)
-  
-  if isObstacle:
-    square_color = OBSTACLE_COLOR
-    
-  (screen_x, screen_y) = to_screen((x, y))
-  square( (screen_x, screen_y), 
-                 0.5* GRID_SIZE, 
-                 color = square_color,
-                 filled = 1,
-                 width = 1)
-  
-  square( (screen_x, screen_y), 
-                 0.5* GRID_SIZE, 
-                 color = EDGE_COLOR,
-                 filled = 0,
-                 width = 3)
-  
-  if isTerminal and not isObstacle:
-    square( (screen_x, screen_y), 
-                 0.4* GRID_SIZE, 
-                 color = EDGE_COLOR,
-                 filled = 0,
-                 width = 2)
-    text( (screen_x, screen_y), 
-           TEXT_COLOR, 
-           str(grid[x][y]), 
-           "Courier", -18, "bold", "c")
       
-  
-  text_color = TEXT_COLOR
-
-  if not isObstacle and isCurrent:
-    circle( (screen_x, screen_y), 0.1*GRID_SIZE, LOCATION_COLOR, fillColor=LOCATION_COLOR )
-
-  # if not isObstacle:
-  #   text( (screen_x, screen_y), text_color, valStr, "Courier", 18, "bold", "c")
-      
-def drawSquare(x, y, val, min, max, valStr, action, isObstacle, isTerminal, isCurrent):
+def drawSquare(x, y, val, min, max, valStr, action, isObstacle, isTerminal, isCurrent, isDynamicObstacle):
 
   square_color = getColor(val, min, max)
   
@@ -149,13 +112,13 @@ def drawSquare(x, y, val, min, max, valStr, action, isObstacle, isTerminal, isCu
                  color = EDGE_COLOR,
                  filled = 0,
                  width = 3)
+
   if isTerminal and not isObstacle:
     square( (screen_x, screen_y), 
                  0.4* GRID_SIZE, 
                  color = EDGE_COLOR,
                  filled = 0,
                  width = 2)
-        
     
   if action == 'north':
     polygon( [(screen_x, screen_y - 0.45*GRID_SIZE), (screen_x+0.05*GRID_SIZE, screen_y-0.40*GRID_SIZE), (screen_x-0.05*GRID_SIZE, screen_y-0.40*GRID_SIZE)], EDGE_COLOR, filled = 1, smoothed = False)
@@ -171,6 +134,9 @@ def drawSquare(x, y, val, min, max, valStr, action, isObstacle, isTerminal, isCu
 
   if not isObstacle and isCurrent:
     circle( (screen_x, screen_y), 0.1*GRID_SIZE, outlineColor=LOCATION_COLOR, fillColor=LOCATION_COLOR )
+
+  if isDynamicObstacle:
+    circle((screen_x, screen_y), 0.1 * GRID_SIZE, outlineColor=DYNAMIC_CAR_COLOR, fillColor=DYNAMIC_CAR_COLOR)
 
   if not isObstacle:
     text( (screen_x, screen_y), text_color, valStr, "Courier", -26, "bold", "c")
@@ -189,10 +155,10 @@ def drawSquareQ(x, y, qVals, minVal, maxVal, valStrs, bestActions, isCurrent):
   s = (screen_x, screen_y+0.5*GRID_SIZE-5)
   w = (screen_x-0.5*GRID_SIZE+5, screen_y)
   e = (screen_x+0.5*GRID_SIZE-5, screen_y)
-  
+
   actions = qVals.keys()
   for action in actions:
-    
+
     wedge_color = getColor(qVals[action], minVal, maxVal)
 
     if action == 'north':
@@ -239,7 +205,6 @@ def drawSquareQ(x, y, qVals, minVal, maxVal, valStrs, bestActions, isCurrent):
       #polygon( (center, nw, sw), wedge_color, filled = 1, smooth = 0)
       text(w, text_color, valStr, "Courier", h, "bold", "w")
 
-
 def getColor(val, minVal, max):
   r, g = 0.0, 0.0
   if val < 0 and minVal < 0:
@@ -260,10 +225,3 @@ def to_screen(point):
   x = gamex*GRID_SIZE + MARGIN  
   y = (GRID_HEIGHT - gamey - 1)*GRID_SIZE + MARGIN  
   return ( x, y )
-
-def to_grid(point):
-  (x, y) = point
-  x = int ((y - MARGIN + GRID_SIZE * 0.5) / GRID_SIZE)
-  y = int ((x - MARGIN + GRID_SIZE * 0.5) / GRID_SIZE)
-  print point, "-->", (x, y)
-  return (x, y)
