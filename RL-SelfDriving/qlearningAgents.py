@@ -27,6 +27,9 @@ class QLearningAgent():
     elif self.grid.qtype == "dynamic_obstacle":
       env = self.grid.getEnvironment(state)
       return self.QValuesWalk[(env, action)]
+    elif self.grid.qtype == "trafficLight":
+      env = self.grid.getEnvironment(state)
+      return self.QValuesWalk[(env, action)]
   
   def getValue(self, state):
     actions = self.grid.getPossibleActions(state)
