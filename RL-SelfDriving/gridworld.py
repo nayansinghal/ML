@@ -49,6 +49,8 @@ class Gridworld():
 
       if self.qtype == "trafficLight":
         self.trafficLights.append([5,0])
+        self.trafficLights.append([2, 0])
+        self.trafficLights.append([7, 0])
         for trafficLight in self.trafficLights:
           self.data[trafficLight[0]][trafficLight[1]] = 'R'
 
@@ -57,7 +59,7 @@ class Gridworld():
 
     x,y = state
     if (x == self.width - 1):
-      trafLightSts = ''
+      trafLightSts = 'W'
     elif (self.data[x+1][1] == 'R' or self.data[x + 1][0] == 'R'):
       trafLightSts = 'R'
     elif (self.data[x+1][1] == 'Y' or self.data[x+1][0] == 'Y'):
@@ -194,9 +196,11 @@ class Gridworld():
         x, y = nextState
         for trafficLight in self.trafficLights:
           trafficX, trafficY = trafficLight[0], trafficLight[1]
-          if x == trafficX and y == trafficY and (self.data[trafficX][trafficY] == 'R' or self.data[trafficX][trafficY] == 'Y'):
-            return -5.0
-          else:
+          if x == trafficX and (self.data[trafficX][trafficY] == 'R' or self.data[trafficX][trafficY] == 'Y'):
+            return -10.0
+          elif x == trafficX and (self.data[trafficX][trafficY] == 'G') and action == 'east':
+            return 1.0
+          elif (action == 'stop' and x + 1 == trafficX and (self.data[trafficX][trafficY] == 'R' or self.data[trafficX][trafficY] == 'Y')):
             return 10.0
         if x == (self.width - 1) and y == (0):
           return 10
@@ -281,9 +285,9 @@ class Gridworld():
       # UPDATE LEARNER
       agent.update(state, action2, nextState, reward)
       self.updateEnvironment()
-      self.updateTrafficEnv()
+      if iter %5 == 0:
+        self.updateTrafficEnv()
       agent.updateEpsilon()
-      print 'color:', self.data[5][0]
 
   def getTransitionStatesAndProbs(self, state, action):
     if action not in self.getPossibleActions(state):
