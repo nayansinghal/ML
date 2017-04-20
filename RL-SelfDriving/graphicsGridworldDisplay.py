@@ -6,7 +6,7 @@ class GraphicsGridworldDisplay:
   def __init__(self, gridworld, size=120, speed=1.0):
     self.gridworld = gridworld
     self.size = 120
-    self.speed = 0.6
+    self.speed = 0.1
     
   def start(self):
     setup(self.gridworld, size=self.size)
@@ -62,7 +62,7 @@ def drawQValues(gridworld, qValues, currentState = None, message = 'State-Action
     for y in range(grid.height):
       state = (x, y)
       gridType = grid.data[x][y]
-      isExit = (str(gridType) == 'e')
+      isExit = (str(gridType) == 'e') or (x == grid.width - 1 and y == 0)
       isCurrent = (currentState == state)
       actions = gridworld.getPossibleActions(state)
       if actions == None or len(actions) == 0:
@@ -74,6 +74,8 @@ def drawQValues(gridworld, qValues, currentState = None, message = 'State-Action
       valStrings = {}
       for action in actions:
         v = qValues[(state, action)]
+        if v is None:
+          v = 0
         q[action] += v
         valStrings[action] = '%.2f' % v
       if gridType == 'O':
