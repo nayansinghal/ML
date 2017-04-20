@@ -17,6 +17,7 @@ class Gridworld():
     self.state = (0,0)
     self.startState = (0,0)
     self.qtype = qtype
+    self.dynamicCars = []
 
   def getObstacleEnv(self, state):
       north = ' '
@@ -45,7 +46,43 @@ class Gridworld():
       else:
         west = self.data[x-1][y]
 
-      return (north, east, south, west)
+      static_env = (north, east, south, west)
+      return static_env
+
+  def getDynObsEnv(self):
+    backward = ''
+    same = ''
+
+    x, y = state
+    if (y == self.height - 1):
+      backward = 'w'
+      same = 'w'
+      return (backward, same)
+
+    elif (x == 0):
+      backward = 'w'
+      same = self.data[x][y]
+
+    else:
+      north = self.data[x][y + 1]
+
+    if (y == 0):
+      south = 'w'
+    else:
+      south = self.data[x][y - 1]
+
+    if (x == self.width - 1):
+      east = 'w'
+    else:
+      east = self.data[x + 1][y]
+
+    if (x == 0):
+      west = 'w'
+    else:
+      west = self.data[x - 1][y]
+
+    static_env = (north, east, south, west)
+    return static_env
 
   def getEnvironment(self, state):
     if self.qtype == "walk":
@@ -56,12 +93,27 @@ class Gridworld():
       return self.getObstacleEnv(state)
 
   def makeGrid(self):
-      self.data[self.width - 1][0] = '10'
+      self.data[self.width - 1][0] = 'e'
 
       if self.qtype == "obstacle":
         self.data[2][0] = 'O'
         self.data[4][1] = 'O'
         self.data[6][0] = 'O'
+
+      #if self.qtype == "dynamic_obstacle":
+        self.dynamicCars.append([0,1])
+        for cars in self.dynamicCars:
+          self.data[cars[0]][cars[1]] = 'D'
+
+  def updateEnvironment(self):
+
+    dynamicCars =[]
+    for cars in self.dynamicCars:
+      self.data[cars[0]][cars[1]] = ''
+      x = cars[0] + 1 if cars[0] + 1 < self.width else 0
+      self.data[x][cars[1]] = 'D'
+      dynamicCars.append([x,cars[1]])
+    self.dynamicCars = dynamicCars
 
   def getPossibleActions(self, state):
     if state == self.terminalState:
@@ -88,12 +140,20 @@ class Gridworld():
     
     if state == self.terminalState:
         return 0.0
-    nextState
 
     if nextState != self.terminalState:
       x,y = nextState
       if self.data[x][y] == 'O':
         return -5.0
+      elif x==(self.width-1) and y ==(0):
+        return 10
+
+    if nextState != self.terminalState:
+      x,y = nextState
+      if self.data[x][y] == 'D':
+        return -5.0
+      elif x==(self.width-1) and y ==(0):
+        return 10
 
     if action=='east':
       return 0.5
@@ -198,6 +258,7 @@ class Gridworld():
         tookAction = self.inferAction(state, nextState)
         if tookAction!=None:
           action=tookAction
+        self.updateEnvironment()
         reward = self.getReward(state, action, nextState)
         self.state = nextState
         return (nextState, reward, action)
