@@ -19,6 +19,32 @@ class Gridworld():
     self.qtype = qtype
     self.dynamicCars = []
 
+  def getStartState(self):
+    return self.startState
+
+  def isTerminal(self, state):
+    return state == self.terminalState
+
+  def getCurrentState(self):
+    return self.state
+
+  def reset(self):
+    self.state = self.getStartState()
+
+  def makeGrid(self):
+      #self.data[self.width - 1][0] = 'e'
+
+      if self.qtype == "obstacle":
+        self.data[2][0] = 'O'
+        self.data[4][1] = 'O'
+        self.data[6][0] = 'O'
+
+      if self.qtype == "dynamic_obstacle":
+        self.dynamicCars.append([0,1])
+        self.dynamicCars.append([5, 1])
+        for cars in self.dynamicCars:
+          self.data[cars[0]][cars[1]] = 'D'
+
   def getObstacleEnv(self, state):
       north = ' '
       south = ' '
@@ -49,7 +75,7 @@ class Gridworld():
       static_env = (north, east, south, west)
       return static_env
 
-  def getDynObsEnv(self):
+  def getDynObsEnv(self, state):
     backward = ''
     same = ''
 
@@ -57,53 +83,25 @@ class Gridworld():
     if (y == self.height - 1):
       backward = 'w'
       same = 'w'
-      return (backward, same)
-
     elif (x == 0):
       backward = 'w'
       same = self.data[x][y]
-
     else:
-      north = self.data[x][y + 1]
+      backward = self.data[x-1][1]
+      same = self.data[x][1]
 
-    if (y == 0):
-      south = 'w'
-    else:
-      south = self.data[x][y - 1]
-
-    if (x == self.width - 1):
-      east = 'w'
-    else:
-      east = self.data[x + 1][y]
-
-    if (x == 0):
-      west = 'w'
-    else:
-      west = self.data[x - 1][y]
-
-    static_env = (north, east, south, west)
-    return static_env
+    dynamice_env = (backward, same)
+    return dynamice_env
 
   def getEnvironment(self, state):
-    if self.qtype == "walk":
-      return state
     if state == self.terminalState:
       return None
-    if self.qtype == "obstacle":
+    elif self.qtype == "walk":
+      return state
+    elif self.qtype == "obstacle":
       return self.getObstacleEnv(state)
-
-  def makeGrid(self):
-      self.data[self.width - 1][0] = 'e'
-
-      if self.qtype == "obstacle":
-        self.data[2][0] = 'O'
-        self.data[4][1] = 'O'
-        self.data[6][0] = 'O'
-
-      #if self.qtype == "dynamic_obstacle":
-        self.dynamicCars.append([0,1])
-        for cars in self.dynamicCars:
-          self.data[cars[0]][cars[1]] = 'D'
+    elif self.qtype == "dynamic_obstacle":
+      return self.getDynObsEnv(state)
 
   def updateEnvironment(self):
 
@@ -141,94 +139,30 @@ class Gridworld():
     if state == self.terminalState:
         return 0.0
 
-    if nextState != self.terminalState:
-      x,y = nextState
-      if self.data[x][y] == 'O':
-        return -5.0
-      elif x==(self.width-1) and y ==(0):
-        return 10
+    if self.qtype == "obstacle":
+      if nextState != self.terminalState:
+        x,y = nextState
+        if self.data[x][y] == 'O':
+          return -5.0
+        elif x==(self.width-1) and y ==(0):
+          return 10
 
-    if nextState != self.terminalState:
-      x,y = nextState
-      if self.data[x][y] == 'D':
-        return -5.0
-      elif x==(self.width-1) and y ==(0):
-        return 10
+    elif self.qtype == "dynamic_obstacle":
+      if nextState != self.terminalState:
+        x,y = nextState
+        for cars in self.dynamicCars:
+          dynCarX, dynCarY = cars[0], cars[1]
+          dynCarX = cars[0] + 1 if cars[0] + 1 < self.width else 0
+          if x == dynCarX and y == dynCarY:
+            return -5.0
+        if x==(self.width-1) and y ==(0):
+          return 10
 
     if action=='east':
       return 0.5
     else:
       return -0.5
 
-
-  def getStartState(self):
-      return self.startState
-    
-  def isTerminal(self, state):
-    return state == self.terminalState
-
-  def getTransitionStatesAndProbs(self, state, action):   
-        
-    if action not in self.getPossibleActions(state):
-      raise "Illegal action!"
-      
-    if self.isTerminal(state):
-      return []
-    
-    x, y = state
-    
-    if x==(self.width-1) and y ==(0):
-      termState = self.terminalState
-      return [(termState, 1.0)]
-      
-    successors = []                
-                
-    northState = (self.__isAllowed(y+1,x) and (x,y+1)) or state
-    #westState = (self.__isAllowed(y,x-1) and (x-1,y)) or state
-    southState = (self.__isAllowed(y-1,x) and (x,y-1)) or state
-    eastState = (self.__isAllowed(y,x+1) and (x+1,y)) or state
-                        
-    if action == 'north' or action == 'south':
-      if action == 'north': 
-        successors.append((northState,1-self.noise))
-      else:
-        successors.append((southState,1-self.noise))
-                                
-      massLeft = self.noise
-      #successors.append((westState,massLeft/2.0))
-      successors.append((eastState,massLeft/1.0))
-                                
-    if action == 'west' or action == 'east':
-      if action == 'east':
-        successors.append((eastState,1-self.noise))
-      #else:
-      #  successors.append((eastState,1-self.noise))
-                
-      massLeft = self.noise
-      successors.append((northState,massLeft/2.0))
-      successors.append((southState,massLeft/2.0))
-      
-    successors = self.__aggregate(successors)
-                                                                           
-    return successors                                
-  
-  def __aggregate(self, statesAndProbs):
-    counter = util.Counter()
-    for state, prob in statesAndProbs:
-      counter[state] += prob
-    newStatesAndProbs = []
-    for state, prob in counter.items():
-      newStatesAndProbs.append((state, prob))
-    return newStatesAndProbs
-        
-  def __isAllowed(self, y, x):
-    if y < 0 or y >= self.height: return False
-    if x < 0 or x >= self.width: return False
-    return True;
-            
-  def getCurrentState(self):
-    return self.state
-               
   def inferAction(self, state, nextState):
     if nextState=="TERMINAL_STATE": #state=="TERMINAL_STATE" or 
       return None
@@ -258,14 +192,10 @@ class Gridworld():
         tookAction = self.inferAction(state, nextState)
         if tookAction!=None:
           action=tookAction
-        self.updateEnvironment()
         reward = self.getReward(state, action, nextState)
         self.state = nextState
         return (nextState, reward, action)
-    raise 'Total transition probability less than one; sample failure.'    
-        
-  def reset(self):
-    self.state = self.getStartState()
+    raise 'Total transition probability less than one; sample failure.'
 
   def runEpisode(self, agent, episode, display):
 
@@ -280,6 +210,7 @@ class Gridworld():
 
       # DISPLAY CURRENT STATE
       print ("ITERATION: " + str(iter) + "\n")
+      iter += 1
 
       state = self.getCurrentState()
       display.displayQValues(agent, state)
@@ -304,4 +235,63 @@ class Gridworld():
               "\nGot reward: "+str(reward)+"\n")
       # UPDATE LEARNER
       agent.update(state, action2, nextState, reward)
+      self.updateEnvironment()
       agent.updateEpsilon()
+
+  def getTransitionStatesAndProbs(self, state, action):
+    if action not in self.getPossibleActions(state):
+      raise "Illegal action!"
+
+    if self.isTerminal(state):
+      return []
+
+    x, y = state
+
+    if x == (self.width - 1) and y == (0):
+      termState = self.terminalState
+      return [(termState, 1.0)]
+
+    successors = []
+
+    northState = (self.__isAllowed(y + 1, x) and (x, y + 1)) or state
+    # westState = (self.__isAllowed(y,x-1) and (x-1,y)) or state
+    southState = (self.__isAllowed(y - 1, x) and (x, y - 1)) or state
+    eastState = (self.__isAllowed(y, x + 1) and (x + 1, y)) or state
+
+    if action == 'north' or action == 'south':
+      if action == 'north':
+        successors.append((northState, 1 - self.noise))
+      else:
+        successors.append((southState, 1 - self.noise))
+
+      massLeft = self.noise
+      # successors.append((westState,massLeft/2.0))
+      successors.append((eastState, massLeft / 1.0))
+
+    if action == 'west' or action == 'east':
+      if action == 'east':
+        successors.append((eastState, 1 - self.noise))
+      # else:
+      #  successors.append((eastState,1-self.noise))
+
+      massLeft = self.noise
+      successors.append((northState, massLeft / 2.0))
+      successors.append((southState, massLeft / 2.0))
+
+    successors = self.__aggregate(successors)
+
+    return successors
+
+  def __aggregate(self, statesAndProbs):
+    counter = util.Counter()
+    for state, prob in statesAndProbs:
+      counter[state] += prob
+    newStatesAndProbs = []
+    for state, prob in counter.items():
+      newStatesAndProbs.append((state, prob))
+    return newStatesAndProbs
+
+  def __isAllowed(self, y, x):
+    if y < 0 or y >= self.height: return False
+    if x < 0 or x >= self.width: return False
+    return True;
